@@ -1,0 +1,101 @@
+// @version=5
+indicator("Multi Timeframe POC", overlay=true, max_lines_count=500, max_labels_count=500)
+
+// ============================================================================
+// Multi Timeframe POC Indicator
+// Plots POC horizontal lines for Weekly, Daily, and 4-Hourly timeframes
+// POC = Price level with highest volume in the given timeframe
+// ============================================================================
+
+// Input Settings
+show_weekly = input.bool(true, "Show Weekly POC", group="Display")
+show_daily = input.bool(true, "Show Daily POC", group="Display")
+show_4h = input.bool(true, "Show 4-Hourly POC", group="Display")
+show_labels = input.bool(true, "Show Labels", group="Display")
+extend_lines = input.bool(true, "Extend Lines to Right", group="Display")
+
+// Color Settings
+col_weekly = input.color(color.new(color.orange, 0), "Weekly POC Color", group="Colors")
+col_daily = input.color(color.new(color.blue, 0), "Daily POC Color", group="Colors")
+col_4h = input.color(color.new(color.cyan, 30), "4H POC Color", group="Colors")
+
+// Line Style Settings
+width_weekly = input.int(2, "Weekly Line Width", minval=1, maxval=5, group="Line Style")
+width_daily = input.int(2, "Daily Line Width", minval=1, maxval=5, group="Line Style")
+width_4h = input.int(1, "4H Line Width", minval=1, maxval=5, group="Line Style")
+
+style_weekly = input.string("Solid", "Weekly Line Style", options=["Solid", "Dashed", "Dotted"], group="Line Style")
+style_daily = input.string("Solid", "Daily Line Style", options=["Solid", "Dashed", "Dotted"], group="Line Style")
+style_4h = input.string("Solid", "4H Line Style", options=["Solid", "Dashed", "Dotted"], group="Line Style")
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+// Function to get line style
+f_get_line_style(style_input) =>
+    style_input == "Dashed" ? line.style_dashed : style_input == "Dotted" ? line.style_dotted : line.style_solid
+
+// Function to get POC for a timeframe
+f_get_poc(timeframe_str) =>
+    request.security(syminfo.tickerid, timeframe_str, close)
+
+// Function to format label text
+f_format_label(label_text, tf) =>
+    label_text + " " + tf
+
+// ============================================================================
+// MAIN LOGIC
+// ============================================================================
+
+// Get POC values for each timeframe
+poc_weekly = f_get_poc("W")
+poc_daily = f_get_poc("D")
+poc_4h = f_get_poc("240")
+
+// Convert line styles
+line_style_weekly = f_get_line_style(style_weekly)
+line_style_daily = f_get_line_style(style_daily)
+line_style_4h = f_get_line_style(style_4h)
+
+// ============================================================================
+// DRAW WEEKLY POC LINE
+// ============================================================================
+
+if show_weekly
+    line.new(bar_index, poc_weekly, bar_index + (extend_lines ? 500 : 0), poc_weekly, 
+             xloc=xloc.bar_index, closed=true, extend=extend_lines ? extend.right : extend.none, 
+             color=col_weekly, width=width_weekly, style=line_style_weekly)
+    
+    if show_labels and barstate.islast
+        label.new(bar_index + 10, poc_weekly, f_format_label("W POC", str.tostring(math.round(poc_weekly, 2))), 
+                  xloc=xloc.bar_index, yloc=yloc.price, color=col_weekly, textcolor=color.white, 
+                  style=label.style_label_left, size=size.small)
+
+// ============================================================================
+// DRAW DAILY POC LINE
+// ============================================================================
+
+if show_daily
+    line.new(bar_index, poc_daily, bar_index + (extend_lines ? 500 : 0), poc_daily, 
+             xloc=xloc.bar_index, closed=true, extend=extend_lines ? extend.right : extend.none, 
+             color=col_daily, width=width_daily, style=line_style_daily)
+    
+    if show_labels and barstate.islast
+        label.new(bar_index + 10, poc_daily, f_format_label("D POC", str.tostring(math.round(poc_daily, 2))), 
+                  xloc=xloc.bar_index, yloc=yloc.price, color=col_daily, textcolor=color.white, 
+                  style=label.style_label_left, size=size.small)
+
+// ============================================================================
+// DRAW 4-HOURLY POC LINE
+// ============================================================================
+
+if show_4h
+    line.new(bar_index, poc_4h, bar_index + (extend_lines ? 500 : 0), poc_4h, 
+             xloc=xloc.bar_index, closed=true, extend=extend_lines ? extend.right : extend.none, 
+             color=col_4h, width=width_4h, style=line_style_4h)
+    
+    if show_labels and barstate.islast
+        label.new(bar_index + 10, poc_4h, f_format_label("4H POC", str.tostring(math.round(poc_4h, 2))), 
+                  xloc=xloc.bar_index, yloc=yloc.price, color=col_4h, textcolor=color.white, 
+                  style=label.style_label_left, size=size.small)
